@@ -104,13 +104,19 @@ class CsTableController extends Controller
      
         try {
             // Eager load rows with their values, then bulk delete all values, rows, and columns
-            $table->load('rows.values');
-            // Delete all values for all rows in one query
-            CsColumn::whereIn('row_id', $table->rows->pluck('id'))->delete();
-            // Delete all rows in one query
-            $table->rows()->delete();
-            // Delete all columns in one query
-            $table->columns()->delete();
+            // Delete all table cell values (assuming CsTableCell model or values relation)
+            foreach ($table->rows as $row) {
+                // Delete all cell values in the row
+                foreach ($row->values as $value) {
+                    $value->delete();
+                }
+                // Delete the row itself
+                $row->delete();
+            }
+            // Delete all columns in the table
+            foreach ($table->columns as $column) {
+                $column->delete();
+            }
             // Finally, delete the table
             $table->delete();
 
@@ -118,7 +124,7 @@ class CsTableController extends Controller
         } catch (\Exception $e) {
             Log::error('Error deleting table and related fields: '.$e->getMessage());
 
-            return back()->with('error', 'Error deleting table and related fields: '.$e->getMessage());
+            throw $e;
         }
     }
 }

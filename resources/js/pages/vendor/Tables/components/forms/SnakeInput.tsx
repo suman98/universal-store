@@ -15,7 +15,11 @@ const SnakeCaseInput = ({ onChange, placeholder = "snake_case_only", ...props })
 
     setHasError(false);
     setValue(raw);
-    onChange?.(raw);
+    onChange?.({
+      target: {
+        value: raw
+      }
+    });
   };
 
   return (

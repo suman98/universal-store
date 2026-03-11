@@ -218,7 +218,7 @@ export default function Create() {
                                                     <SnakeCaseInput
                                                         id="field_name"
                                                         value={currentField.name}
-                                                        onChange={(e) => setCurrentField({ ...currentField, name: e.target.value })}
+                                                        onChange={(e: { target: { value: any; }; }) => setCurrentField({ ...currentField, name: e.target.value })}
                                                         onKeyDown={handleKeyDown}
                                                         placeholder="field_name"
                                                         className="h-8 font-mono text-xs"
