@@ -1,10 +1,10 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { route } from '@/lib/route';
-import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
+import { toast } from '@/components/ui/toast';
+import AppLayout from '@/layouts/app-layout';
+import { route } from '@/lib/route';
 interface Table {
     id: number;
     name: string;
@@ -42,13 +42,14 @@ export default function Index() {
     }, [tables]);
 
     return (
+        <AppLayout>
         <div className="min-h-screen bg-background">
             <Head title="Product Tables" />
 
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-8 flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold">Product Tables</h1>
+                        <h1 className="text-3xl font-bold">Dynamic Tables</h1>
                         <p className="mt-1 text-muted-foreground">Manage your dynamic product tables</p>
                     </div>
                     <Link href={route('vendor.tables.create')}>
@@ -121,5 +122,6 @@ export default function Index() {
                 )}
             </div>
         </div>
+        </AppLayout>
     );
 }

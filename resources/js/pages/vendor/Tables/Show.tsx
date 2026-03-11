@@ -12,7 +12,7 @@ import NewRowModal from './components/NewRowModal';
 import PageContainer from './components/PageContainer';
 import PageHeader from './components/PageHeader';
 import RowCounter from './components/RowCounter';
-
+import AppLayout from '@/layouts/app-layout';
 // Types & Utils
 import type { Table, Column, Row } from './components/types';
 import { getEditDataFromRow, transformFlatDataToNested } from './components/utils';
@@ -101,6 +101,7 @@ export default function Show() {
     };
 
     return (
+        <AppLayout>
         <PageContainer>
             <Head title={table.display_name} />
             
@@ -161,5 +162,6 @@ export default function Show() {
                 <RowCounter count={rows.length} />
             </ContentContainer>
         </PageContainer>
+        </AppLayout>
     );
 }

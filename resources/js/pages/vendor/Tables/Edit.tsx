@@ -1,18 +1,30 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import {
+    Plus,
+    Trash2,
+    Table2,
+    ChevronRight,
+    Hash,
+    Type,
+    Calendar,
+    ToggleLeft,
+    FileText,
+    Braces,
+    ArrowLeft,
+    Loader2,
+    Sparkles,
+    Lock,
+    X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { route } from '@/lib/route';
-import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import SnakeCaseInput from './components/forms/SnakeInput';
+import { toast } from '@/components/ui/toast';
+import AppLayout from '@/layouts/app-layout';
+import { route } from '@/lib/route';
 
 interface Column {
     id: number;
@@ -28,6 +40,25 @@ interface Table {
     display_name: string;
     description: string | null;
     columns: Column[];
+}
+
+const FIELD_TYPES: { value: Column['type']; label: string; icon: React.ReactNode; color: string }[] = [
+    { value: 'string',  label: 'Text',      icon: <Type      className="h-3.5 w-3.5" />, color: 'text-blue-500   bg-blue-500/10'   },
+    { value: 'number',  label: 'Number',    icon: <Hash      className="h-3.5 w-3.5" />, color: 'text-purple-500 bg-purple-500/10' },
+    { value: 'date',    label: 'Date',      icon: <Calendar  className="h-3.5 w-3.5" />, color: 'text-green-500  bg-green-500/10'  },
+    { value: 'boolean', label: 'Boolean',   icon: <ToggleLeft className="h-3.5 w-3.5" />, color: 'text-orange-500 bg-orange-500/10' },
+    { value: 'text',    label: 'Long Text', icon: <FileText  className="h-3.5 w-3.5" />, color: 'text-pink-500   bg-pink-500/10'   },
+    { value: 'json',    label: 'JSON',      icon: <Braces    className="h-3.5 w-3.5" />, color: 'text-yellow-500 bg-yellow-500/10' },
+];
+
+function FieldTypeBadge({ type }: { type: Column['type'] }) {
+    const config = FIELD_TYPES.find((t) => t.value === type)!;
+    return (
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${config.color}`}>
+            {config.icon}
+            {config.label}
+        </span>
+    );
 }
 
 export default function Edit() {
@@ -63,12 +94,12 @@ export default function Edit() {
     }, [error]);
 
     const handleColumnEdit = (columnId: number, field: string, value: any) => {
-        const cleanedValue = value.replace(/\s/g, '');
+        const cleanedValue = field === 'display_name' ? value.replace(/\s/g, '') : value;
         
         // Validate display_name field
         if (field === 'display_name') {
             if (!cleanedValue.trim()) {
-                setColumnErrors({ ...columnErrors, [columnId]: 'Field name cannot be empty or contain only spaces' });
+                setColumnErrors({ ...columnErrors, [columnId]: 'Field name cannot be empty' });
                 return;
             } else {
                 const newErrors = { ...columnErrors };
@@ -93,8 +124,8 @@ export default function Edit() {
         const cleanedName = newColumn.display_name.replace(/\s/g, '');
         
         if (!cleanedName.trim()) {
-            setColumnErrors({ ...columnErrors, new: 'Field name cannot be empty or contain only spaces' });
-            toast.error('Field name cannot be empty or contain only spaces');
+            setColumnErrors({ ...columnErrors, new: 'Field name cannot be empty' });
+            toast.error('Field name cannot be empty');
             return;
         }
 
@@ -104,7 +135,7 @@ export default function Edit() {
             .replace(/[^a-z0-9_]/g, '');
 
         const newCol: Column = {
-            id: Math.min(...data.columns.map((c) => c.id)) - 1, // Temporary ID for new columns
+            id: Math.min(...data.columns.map((c) => c.id)) - 1,
             name: columnName,
             display_name: cleanedName,
             type: newColumn.type as Column['type'],
@@ -117,19 +148,17 @@ export default function Edit() {
         const newErrors = { ...columnErrors };
         delete newErrors['new'];
         setColumnErrors(newErrors);
-        toast.success('Column added (will be created on save)');
+        toast.success('Column added');
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Check if there are any column errors
         if (Object.keys(columnErrors).length > 0) {
             toast.error('Please fix all field name errors before saving');
             return;
         }
         
-        // Validate all columns have valid names
         const hasInvalidColumns = data.columns.some(col => !col.display_name.trim());
         if (hasInvalidColumns) {
             toast.error('All columns must have valid names');
@@ -152,261 +181,341 @@ export default function Edit() {
         });
     };
 
-    const columnTypeOptions = ['string', 'number', 'date', 'boolean', 'json', 'text'];
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddColumn();
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-background py-8">
+        <AppLayout>
             <Head title={`Edit ${table.display_name}`} />
 
-            <div className="container mx-auto max-w-2xl px-4">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold">Edit Table</h1>
-                    <p className="text-muted-foreground mt-1">Update table details</p>
-                </div>
+            <div className="min-h-screen bg-background">
+                <div className="w-full px-4 py-8">
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Table Settings</CardTitle>
-                        <CardDescription>Modify the table name, display name, and description</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Table Name (Read-only) */}
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Table Name</Label>
-                            <Input
-                                type="text"
-                                id="name"
-                                value={table.name}
-                                readOnly
-                                disabled
-                            />
-                            <p className="text-xs text-muted-foreground">Table name cannot be changed</p>
-                        </div>
+                    {/* ── Header ── */}
+                    <div className="mb-8">
+                        <button
+                            onClick={() => window.history.back()}
+                            className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            <ArrowLeft className="h-3.5 w-3.5" />
+                            Back
+                        </button>
 
-                        {/* Display Name */}
-                        <div className="space-y-2">
-                            <Label htmlFor="display_name">Display Name</Label>
-                            <Input
-                                type="text"
-                                id="display_name"
-                                value={data.display_name}
-                                onChange={(e) => setData('display_name', e.target.value)}
-                                aria-invalid={!!errors.display_name}
-                            />
-                            {errors.display_name && (
-                                <p className="text-sm text-destructive">{errors.display_name}</p>
-                            )}
-                        </div>
-
-                        {/* Description */}
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <textarea
-                                id="description"
-                                value={data.description}
-                                onChange={(e) => setData('description', e.target.value)}
-                                className="border-input file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex min-h-32 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive resize-none"
-                                rows={4}
-                                aria-invalid={!!errors.description}
-                            />
-                            {errors.description && (
-                                <p className="text-sm text-destructive">{errors.description}</p>
-                            )}
-                        </div>
-
-                        {/* Columns Management */}
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-sm font-semibold">Table Columns</h3>
-                                    <p className="text-xs text-muted-foreground mt-1">Edit existing columns or add new ones</p>
-                                </div>
-                                {!showNewColumnForm && (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        onClick={() => setShowNewColumnForm(true)}
-                                    >
-                                        Add Column
-                                    </Button>
-                                )}
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                                <Table2 className="h-5 w-5 text-primary" />
                             </div>
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-tight">Edit Table</h1>
+                                <p className="text-sm text-muted-foreground">Update table settings and columns</p>
+                            </div>
+                        </div>
+                    </div>
 
-                            {/* New Column Form */}
-                            {showNewColumnForm && (
-                                <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <Label htmlFor="new_column_name" className="text-xs">Column Name</Label>
-                                            <Input
-                                                id="new_column_name"
-                                                placeholder="e.g., ProductSKU"
-                                                value={newColumn.display_name}
-                                                onChange={(e) => {
-                                                    const value = e.target.value.replace(/\s/g, '');
-                                                    setNewColumn({ ...newColumn, display_name: value });
-                                                    
-                                                    if (!value.trim()) {
-                                                        setColumnErrors({ ...columnErrors, new: 'Field name cannot be empty or contain only spaces' });
-                                                    } else {
-                                                        const newErrors = { ...columnErrors };
-                                                        delete newErrors['new'];
-                                                        setColumnErrors(newErrors);
-                                                    }
-                                                }}
-                                                aria-invalid={!!columnErrors['new']}
-                                            />
-                                            {columnErrors['new'] && (
-                                                <p className="text-xs text-destructive">{columnErrors['new']}</p>
-                                            )}
+                    <form onSubmit={handleSubmit} className="space-y-5">
+
+                        {/* ── Main Content Grid ── */}
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+
+                            {/* ── Table Settings Card (Left - 2 cols) ── */}
+                            <Card className="border-border/60 shadow-sm lg:col-span-2">
+                                <CardHeader className="pb-3 pt-5 px-5">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        Settings
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 px-5 pb-5">
+
+                                    {/* Table Name (Read-only) */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="name" className="text-xs font-medium text-muted-foreground">
+                                            Table Name
+                                        </Label>
+                                        <div className="flex h-9 items-center gap-2 rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono text-muted-foreground">
+                                            <Lock className="h-3.5 w-3.5 shrink-0" />
+                                            {table.name}
                                         </div>
-                                        <div className="space-y-1">
-                                            <Label htmlFor="new_column_type" className="text-xs">Type</Label>
-                                            <Select
-                                                value={newColumn.type}
-                                                onValueChange={(value) =>
-                                                    setNewColumn({ ...newColumn, type: value })
-                                                }
-                                            >
-                                                <SelectTrigger id="new_column_type">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {columnTypeOptions.map((type) => (
-                                                        <SelectItem key={type} value={type}>
-                                                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                        <p className="text-xs text-muted-foreground/80">Cannot be changed</p>
                                     </div>
-                                    <div className="flex gap-2 pt-2">
+
+                                    {/* Display Name */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="display_name" className="text-xs font-medium text-muted-foreground">
+                                            Display Name <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="display_name"
+                                            value={data.display_name}
+                                            onChange={(e) => setData('display_name', e.target.value)}
+                                            placeholder="Products"
+                                            className={`h-9 text-sm ${errors.display_name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                        />
+                                        {errors.display_name && (
+                                            <p className="text-xs text-red-500">{errors.display_name}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Description */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="description" className="text-xs font-medium text-muted-foreground">
+                                            Description
+                                        </Label>
+                                        <textarea
+                                            id="description"
+                                            value={data.description}
+                                            onChange={(e) => setData('description', e.target.value)}
+                                            rows={3}
+                                            placeholder="Describe what this table stores..."
+                                            className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        />
+                                        {errors.description && (
+                                            <p className="text-xs text-red-500">{errors.description}</p>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* ── Columns Management Card (Right - 3 cols) ── */}
+                            <Card className="border-border/60 shadow-sm lg:col-span-3">
+                                <CardHeader className="pb-3 pt-5 px-5">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                            <Table2 className="h-3.5 w-3.5" />
+                                            Columns
+                                        </CardTitle>
+                                        {data.columns.length > 0 && (
+                                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                                {data.columns.length} {data.columns.length === 1 ? 'column' : 'columns'}
+                                            </span>
+                                        )}
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4 px-5 pb-5">
+
+                                    {/* ── Add Column Form ── */}
+                                    {!showNewColumnForm ? (
                                         <Button
                                             type="button"
                                             size="sm"
-                                            onClick={handleAddColumn}
-                                            disabled={!!columnErrors['new'] || !newColumn.display_name.trim()}
+                                            onClick={() => setShowNewColumnForm(true)}
+                                            className="w-full gap-1.5 text-xs h-8"
                                         >
-                                            Create Column
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Add Column
                                         </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => {
-                                                setShowNewColumnForm(false);
-                                                setNewColumn({ display_name: '', type: 'string' });
-                                            }}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
+                                    ) : (
+                                        <div className="rounded-lg border border-dashed border-border/80 bg-muted/30 p-4">
+                                            <p className="mb-3 text-xs font-medium text-muted-foreground">New Column</p>
 
-                            {/* Columns List */}
-                            <div className="space-y-2">
-                                {data.columns.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground py-4 text-center">No columns yet. Add your first column.</p>
-                                ) : (
-                                    data.columns.map((column) => (
-                                        <div
-                                            key={column.id}
-                                            className="rounded-lg border bg-card p-3 space-y-3"
-                                        >
-                                            <div className="grid grid-cols-3 gap-3">
-                                                <div className="space-y-1">
-                                                    <Label htmlFor={`col_name_${column.id}`} className="text-xs">Column Name</Label>
-                                                    <Input
-                                                        id={`col_name_${column.id}`}
-                                                        value={column.display_name}
-                                                        onChange={(e) => {
-                                                            const value = e.target.value.replace(/\s/g, '');
-                                                            handleColumnEdit(column.id, 'display_name', value);
-                                                            
-                                                            if (!value.trim()) {
-                                                                setColumnErrors({ ...columnErrors, [column.id]: 'Field name cannot be empty or contain only spaces' });
-                                                            } else {
-                                                                const newErrors = { ...columnErrors };
-                                                                delete newErrors[column.id];
-                                                                setColumnErrors(newErrors);
-                                                            }
-                                                        }}
-                                                        placeholder="DisplayName"
-                                                        aria-invalid={!!columnErrors[column.id]}
-                                                    />
-                                                    {columnErrors[column.id] && (
-                                                        <p className="text-xs text-destructive">{columnErrors[column.id]}</p>
-                                                    )}
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <Label htmlFor={`col_type_${column.id}`} className="text-xs">Type</Label>
-                                                    <Select
-                                                        value={column.type}
-                                                        onValueChange={(value) =>
-                                                            handleColumnEdit(column.id, 'type', value)
-                                                        }
-                                                    >
-                                                        <SelectTrigger id={`col_type_${column.id}`}>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {columnTypeOptions.map((type) => (
-                                                                <SelectItem key={type} value={type}>
-                                                                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                                                                </SelectItem>
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="space-y-1.5">
+                                                        <Label htmlFor="new_column_name" className="text-xs text-muted-foreground">
+                                                            Column Name
+                                                        </Label>
+                                                        <Input
+                                                            id="new_column_name"
+                                                            placeholder="e.g., ProductSKU"
+                                                            value={newColumn.display_name}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value.replace(/\s/g, '');
+                                                                setNewColumn({ ...newColumn, display_name: value });
+                                                                
+                                                                if (!value.trim()) {
+                                                                    setColumnErrors({ ...columnErrors, new: 'Field name cannot be empty' });
+                                                                } else {
+                                                                    const newErrors = { ...columnErrors };
+                                                                    delete newErrors['new'];
+                                                                    setColumnErrors(newErrors);
+                                                                }
+                                                            }}
+                                                            onKeyDown={handleKeyDown}
+                                                            className={`h-8 text-xs ${columnErrors['new'] ? 'border-red-500' : ''}`}
+                                                        />
+                                                        {columnErrors['new'] && (
+                                                            <p className="text-xs text-red-500">{columnErrors['new']}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-xs text-muted-foreground">Type</Label>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {FIELD_TYPES.map((ft) => (
+                                                                <button
+                                                                    key={ft.value}
+                                                                    type="button"
+                                                                    onClick={() => setNewColumn({ ...newColumn, type: ft.value })}
+                                                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-all ${
+                                                                        newColumn.type === ft.value
+                                                                            ? `${ft.color} border-transparent ring-2 ring-offset-1 ring-offset-background ring-current/30`
+                                                                            : 'border-border bg-background text-muted-foreground hover:border-border/80'
+                                                                    }`}
+                                                                >
+                                                                    {ft.icon}
+                                                                </button>
                                                             ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <Label className="text-xs">Field Name</Label>
-                                                    <div className="flex items-center h-9 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
-                                                        {column.name}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    onClick={() => handleColumnDelete(column.id)}
-                                                >
-                                                    Delete
-                                                </Button>
+
+                                                <div className="flex gap-2 pt-2">
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        onClick={handleAddColumn}
+                                                        disabled={!!columnErrors['new'] || !newColumn.display_name.trim()}
+                                                        className="h-8 gap-1.5 text-xs flex-1"
+                                                    >
+                                                        <Plus className="h-3.5 w-3.5" />
+                                                        Create
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setShowNewColumnForm(false);
+                                                            setNewColumn({ display_name: '', type: 'string' });
+                                                            const newErrors = { ...columnErrors };
+                                                            delete newErrors['new'];
+                                                            setColumnErrors(newErrors);
+                                                        }}
+                                                        className="h-8 text-xs flex-1"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
-                                    ))
-                                )}
-                            </div>
+                                    )}
+
+                                    {/* ── Columns List ── */}
+                                    <div className="max-h-[500px] space-y-1.5 overflow-y-auto pr-2">
+                                        {data.columns.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/60 py-8 text-center">
+                                                <Table2 className="mb-2 h-8 w-8 text-muted-foreground/30" />
+                                                <p className="text-sm font-medium text-muted-foreground">No columns yet</p>
+                                                <p className="mt-0.5 text-xs text-muted-foreground/60">Add your first column</p>
+                                            </div>
+                                        ) : (
+                                            data.columns.map((column, index) => (
+                                                <div
+                                                    key={column.id}
+                                                    className="group rounded-lg border border-border/60 bg-background p-3 transition-colors hover:border-border hover:bg-muted/30"
+                                                >
+                                                    {/* Column Header */}
+                                                    <div className="mb-3 flex items-center gap-2">
+                                                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-mono font-medium text-muted-foreground">
+                                                            {index + 1}
+                                                        </div>
+                                                        <FieldTypeBadge type={column.type} />
+                                                        <div className="flex-1 min-w-0 truncate text-xs font-mono text-muted-foreground">
+                                                            {column.name}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleColumnDelete(column.id)}
+                                                            className="shrink-0 rounded-md p-1 text-muted-foreground/40 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Column Edit Row */}
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="space-y-1">
+                                                            <Label htmlFor={`col_name_${column.id}`} className="text-xs text-muted-foreground">
+                                                                Display Name
+                                                            </Label>
+                                                            <Input
+                                                                id={`col_name_${column.id}`}
+                                                                value={column.display_name}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value.replace(/\s/g, '');
+                                                                    handleColumnEdit(column.id, 'display_name', value);
+                                                                    
+                                                                    if (!value.trim()) {
+                                                                        setColumnErrors({ ...columnErrors, [column.id]: 'Field name cannot be empty' });
+                                                                    } else {
+                                                                        const newErrors = { ...columnErrors };
+                                                                        delete newErrors[column.id];
+                                                                        setColumnErrors(newErrors);
+                                                                    }
+                                                                }}
+                                                                placeholder="DisplayName"
+                                                                className={`h-8 text-xs ${columnErrors[column.id] ? 'border-red-500' : ''}`}
+                                                            />
+                                                            {columnErrors[column.id] && (
+                                                                <p className="text-xs text-red-500">{columnErrors[column.id]}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-1">
+                                                            <Label className="text-xs text-muted-foreground">Type</Label>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {FIELD_TYPES.map((ft) => (
+                                                                    <button
+                                                                        key={ft.value}
+                                                                        type="button"
+                                                                        onClick={() => handleColumnEdit(column.id, 'type', ft.value)}
+                                                                        className={`inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-xs transition-all ${
+                                                                            column.type === ft.value
+                                                                                ? `${ft.color} border-transparent ring-2 ring-offset-1 ring-offset-background ring-current/30`
+                                                                                : 'border-border bg-background text-muted-foreground hover:border-border/80'
+                                                                        }`}
+                                                                    >
+                                                                        {ft.icon}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
 
-                        {/* Form Actions */}
-                        <div className="flex gap-4 pt-6 border-t">
+                        {/* ── Form Actions ── */}
+                        <div className="flex gap-3 border-t pt-5 justify-end">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => window.history.back()}
+                                className="h-9 gap-1.5 text-sm"
+                            >
+                                <ArrowLeft className="h-3.5 w-3.5" />
+                                Cancel
+                            </Button>
                             <Button
                                 type="submit"
-                                disabled={processing}
-                                className="flex-1"
+                                disabled={processing || data.columns.length === 0}
+                                className="h-9 gap-1.5 text-sm"
                             >
-                                {processing ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="flex-1"
-                            >
-                                <Link href={route('vendor.tables.show', table.id)}>
-                                    Cancel
-                                </Link>
+                                {processing ? (
+                                    <>
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        Saving…
+                                    </>
+                                ) : (
+                                    <>
+                                        <Table2 className="h-3.5 w-3.5" />
+                                        Save Changes
+                                    </>
+                                )}
                             </Button>
                         </div>
+
                     </form>
-                    </CardContent>
-                </Card>
+                </div>
             </div>
-        </div>
+        </AppLayout>
     );
 }
+
