@@ -51,6 +51,9 @@ export default function Create() {
         }
         
         post(route('vendor.tables.store'), {
+            onSuccess: () => {
+                toast.success('Table created successfully');
+            },
             onError: (errors: any) => {
                 // Show first error as toast
                 const errorMessages = Object.values(errors).flat();

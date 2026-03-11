@@ -49,6 +49,7 @@ export default function Edit() {
         e.preventDefault();
         put(route('vendor.tables.update', table.id), {
             onSuccess: () => {
+                toast.success('Table updated successfully');
                 window.history.back();
             },
             onError: (errors: any) => {

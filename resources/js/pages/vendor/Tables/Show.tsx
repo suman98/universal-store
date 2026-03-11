@@ -1,7 +1,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { route } from '@/lib/route';
 import { toast } from '@/components/ui/toast';
+import { route } from '@/lib/route';
 
 // Components
 import AddRowButton from './components/AddRowButton';
@@ -70,6 +70,7 @@ export default function Show() {
             deleteForm.delete(route('vendor.rows.destroy', { tableId: table.id, id: rowId }), {
                 onSuccess: () => {
                     setDeletingRowId(null);
+                    toast.success('Row deleted successfully');
                 },
             });
         }
@@ -93,6 +94,7 @@ export default function Show() {
                 onSuccess: () => {
                     setEditingRowId(null);
                     setEditingData({});
+                    toast.success('Row updated successfully');
                 },
             }
         );
@@ -120,6 +122,7 @@ export default function Show() {
                             onSuccess: () => {
                                 reset();
                                 setShowNewRowForm(false);
+                                toast.success('Row created successfully');
                             },
                         });
                     }}

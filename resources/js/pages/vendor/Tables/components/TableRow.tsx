@@ -2,7 +2,7 @@ import { Column, Row } from './types';
 import TableCell from './TableCell';
 import { getCellValue } from './utils';
 import { Button } from '@/components/ui/button';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, Loader2 } from 'lucide-react';
 
 interface TableRowProps {
     row: Row;
@@ -39,7 +39,7 @@ export default function TableRow({
                         size="sm"
                         variant="outline"
                         onClick={() => onEdit(row)}
-                        disabled={editingRowId !== null}
+                        disabled={editingRowId !== null || deletingRowId !== null}
                         className="gap-1"
                     >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -52,8 +52,17 @@ export default function TableRow({
                         disabled={editingRowId !== null || deletingRowId === row.id}
                         className="gap-1"
                     >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
+                        {deletingRowId === row.id ? (
+                            <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Deleting...
+                            </>
+                        ) : (
+                            <>
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Delete
+                            </>
+                        )}
                     </Button>
                 </div>
             </td>

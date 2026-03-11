@@ -1,9 +1,9 @@
-import { Column } from './types';
-import InputField from './InputField';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, X } from 'lucide-react';
+import InputField from './InputField';
+import type { Column } from './types';
 
 interface NewRowModalProps {
     isOpen: boolean;
