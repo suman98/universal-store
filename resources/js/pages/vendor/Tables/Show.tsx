@@ -1,19 +1,19 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { route } from '@/lib/route';
 
 // Components
-import PageHeader from './components/PageHeader';
-import PageContainer from './components/PageContainer';
-import ContentContainer from './components/ContentContainer';
 import AddRowButton from './components/AddRowButton';
-import NewRowForm from './components/NewRowForm';
-import EditModal from './components/EditModal';
+import ContentContainer from './components/ContentContainer';
 import DataTable from './components/DataTable';
+import EditModal from './components/EditModal';
+import NewRowForm from './components/NewRowForm';
+import PageContainer from './components/PageContainer';
+import PageHeader from './components/PageHeader';
 import RowCounter from './components/RowCounter';
 
 // Types & Utils
-import { Table, Column, Row } from './components/types';
+import type { Table, Column, Row } from './components/types';
 import { getEditDataFromRow, transformFlatDataToNested } from './components/utils';
 
 export default function Show() {
@@ -69,14 +69,15 @@ export default function Show() {
 
     const handleUpdateRow = (flatData: Record<number, any>) => {
         const nestedData = transformFlatDataToNested(flatData, columns);
-        updateForm.put(route('vendor.rows.update', { tableId: table.id, id: editingRowId }), {
-            data: { values: nestedData },
-            onSuccess: () => {
-                setEditingRowId(null);
-                setEditingData({});
-                updateForm.reset();
-            },
-        });
+        router.put(route('vendor.rows.update', { tableId: table.id, id: editingRowId }), 
+            { values: nestedData },
+            {
+                onSuccess: () => {
+                    setEditingRowId(null);
+                    setEditingData({});
+                },
+            }
+        );
     };
 
     return (

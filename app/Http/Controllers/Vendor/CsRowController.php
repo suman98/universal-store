@@ -38,6 +38,7 @@ class CsRowController extends Controller
 
     public function update(StoreCsRowRequest $request, CsTable $table, CsRow $row)
     {
+        
         // Update cell values
         if ($request->has('values')) {
             foreach ($request->values as $columnId => $value) {
