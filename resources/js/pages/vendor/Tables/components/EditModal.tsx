@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Column } from './types';
 import InputField from './InputField';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -26,6 +26,11 @@ export default function EditModal({
     onCancel,
 }: EditModalProps) {
     const [localData, setLocalData] = useState<Record<number, any>>(editingData);
+
+    // Sync localData when editingData prop changes
+    useEffect(() => {
+        setLocalData(editingData);
+    }, [editingData]);
 
     const handleFieldChange = (columnId: number, value: any) => {
         const updated = { ...localData, [columnId]: value };
