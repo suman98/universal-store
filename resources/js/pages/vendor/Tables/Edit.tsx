@@ -19,9 +19,10 @@ import {
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import SnakeCaseInput from './components/forms/SnakeInput';
+
 import { toast } from '@/components/ui/toast';
 import AppLayout from '@/layouts/app-layout';
 import { route } from '@/lib/route';
@@ -79,6 +80,8 @@ export default function Edit() {
     const [newColumn, setNewColumn] = useState({ display_name: '', type: 'string' });
     const [showNewColumnForm, setShowNewColumnForm] = useState(false);
     const [columnErrors, setColumnErrors] = useState<{ [key: number | string]: string }>({});
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Display flash messages
     useEffect(() => {
@@ -186,6 +189,33 @@ export default function Edit() {
             e.preventDefault();
             handleAddColumn();
         }
+    };
+
+    const handleDeleteTable = () => {
+        setIsDeleting(true);
+        
+        const deleteUrl = route('vendor.tables.destroy', table.id);
+        
+        fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            },
+        })
+            .then((response) => {
+                if (response.ok) {
+                    toast.success('Table and all related fields deleted successfully');
+                    window.location.href = route('vendor.tables.index');
+                } else {
+                    throw new Error('Failed to delete table');
+                }
+            })
+            .catch((error) => {
+                setIsDeleting(false);
+                toast.error('Error deleting table. Please try again.');
+                console.error('Delete error:', error);
+            });
     };
 
     return (
@@ -483,21 +513,81 @@ export default function Edit() {
                         </div>
 
                         {/* ── Form Actions ── */}
-                        <div className="flex gap-3 border-t pt-5 justify-end">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => window.history.back()}
-                                className="h-9 gap-1.5 text-sm"
-                            >
-                                <ArrowLeft className="h-3.5 w-3.5" />
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={processing || data.columns.length === 0}
-                                className="h-9 gap-1.5 text-sm"
-                            >
+                        <div className="flex gap-3 border-t pt-5 justify-between">
+                            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={() => setShowDeleteDialog(true)}
+                                    className="h-9 gap-1.5 text-sm"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Delete Table
+                                </Button>
+
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <Trash2 className="h-5 w-5 text-destructive" />
+                                            Delete Table
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            This action cannot be undone. The table "<strong>{table.display_name}</strong>" and all its related fields will be permanently deleted.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <div className="rounded-lg bg-destructive/10 p-3 border border-destructive/20">
+                                        <p className="text-sm text-destructive font-medium">
+                                            ⚠️ Warning: All data in this table will be lost.
+                                        </p>
+                                    </div>
+
+                                    <DialogFooter className="gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setShowDeleteDialog(false)}
+                                            disabled={isDeleting}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            onClick={handleDeleteTable}
+                                            disabled={isDeleting}
+                                        >
+                                            {isDeleting ? (
+                                                <>
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    Deleting…
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                    Delete Permanently
+                                                </>
+                                            )}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+
+                            <div className="flex gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => window.history.back()}
+                                    className="h-9 gap-1.5 text-sm"
+                                >
+                                    <ArrowLeft className="h-3.5 w-3.5" />
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={processing || data.columns.length === 0}
+                                    className="h-9 gap-1.5 text-sm"
+                                >
                                 {processing ? (
                                     <>
                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -509,7 +599,8 @@ export default function Edit() {
                                         Save Changes
                                     </>
                                 )}
-                            </Button>
+                                </Button>
+                            </div>
                         </div>
 
                     </form>
