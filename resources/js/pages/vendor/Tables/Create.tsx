@@ -1,6 +1,10 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { route } from '@/lib/route';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Field {
     name: string;
@@ -42,116 +46,101 @@ export default function Create() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-background">
             <Head title="Create Table" />
 
-            <div className="container mx-auto max-w-2xl px-4">
+            <div className="container mx-auto max-w-2xl px-4 py-8">
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">Create New Table</h1>
-                    <p className="mt-1 text-gray-600">Define your table structure with fields</p>
+                    <h1 className="text-3xl font-bold">Create New Table</h1>
+                    <p className="mt-1 text-muted-foreground">Define your table structure with fields</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Table Name */}
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                            Table Name
-                        </label>
-                        <input
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Table Name</Label>
+                        <Input
                             type="text"
                             id="name"
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
-                            className={`mt-1 block w-full rounded-lg border px-4 py-2 ${
-                                errors.name ? 'border-red-500' : 'border-gray-300'
-                            } focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
+                            className={errors.name ? 'border-red-500' : ''}
                             placeholder="products"
                         />
                         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
                     </div>
 
                     {/* Display Name */}
-                    <div>
-                        <label htmlFor="display_name" className="block text-sm font-medium text-gray-700">
-                            Display Name
-                        </label>
-                        <input
+                    <div className="space-y-2">
+                        <Label htmlFor="display_name">Display Name</Label>
+                        <Input
                             type="text"
                             id="display_name"
                             value={data.display_name}
                             onChange={(e) => setData('display_name', e.target.value)}
-                            className={`mt-1 block w-full rounded-lg border px-4 py-2 ${
-                                errors.display_name ? 'border-red-500' : 'border-gray-300'
-                            } focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
+                            className={errors.display_name ? 'border-red-500' : ''}
                             placeholder="Products"
                         />
                         {errors.display_name && <p className="mt-1 text-sm text-red-600">{errors.display_name}</p>}
                     </div>
 
                     {/* Description */}
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                            Description
-                        </label>
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
                         <textarea
                             id="description"
                             value={data.description}
                             onChange={(e) => setData('description', e.target.value)}
-                            className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             rows={3}
                             placeholder="Describe your table..."
                         />
                     </div>
 
                     {/* Fields Section */}
-                    <div className="rounded-lg border border-gray-200 bg-white p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Define Fields</h2>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Define Fields</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
 
                         {/* Add Field Form */}
                         <div className="space-y-4 mb-6">
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="field_name" className="block text-sm font-medium text-gray-700">
-                                        Field Name
-                                    </label>
-                                    <input
+                                <div className="space-y-2">
+                                    <Label htmlFor="field_name">Field Name</Label>
+                                    <Input
                                         type="text"
                                         id="field_name"
                                         value={currentField.name}
                                         onChange={(e) => setCurrentField({ ...currentField, name: e.target.value })}
-                                        className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                         placeholder="field_name"
                                     />
                                 </div>
-                                <div>
-                                    <label htmlFor="field_display" className="block text-sm font-medium text-gray-700">
-                                        Display Name
-                                    </label>
-                                    <input
+                                <div className="space-y-2">
+                                    <Label htmlFor="field_display">Display Name</Label>
+                                    <Input
                                         type="text"
                                         id="field_display"
                                         value={currentField.display_name}
                                         onChange={(e) =>
                                             setCurrentField({ ...currentField, display_name: e.target.value })
                                         }
-                                        className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                         placeholder="Field Name"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="field_type" className="block text-sm font-medium text-gray-700">
-                                        Field Type
-                                    </label>
+                                <div className="space-y-2">
+                                    <Label htmlFor="field_type">Field Type</Label>
                                     <select
                                         id="field_type"
                                         value={currentField.type}
                                         onChange={(e) =>
                                             setCurrentField({ ...currentField, type: e.target.value as Field['type'] })
                                         }
-                                        className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         <option value="string">Text</option>
                                         <option value="number">Number</option>
@@ -162,13 +151,13 @@ export default function Create() {
                                     </select>
                                 </div>
                                 <div className="flex items-end">
-                                    <button
+                                    <Button
                                         type="button"
                                         onClick={addField}
-                                        className="w-full rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 transition"
+                                        className="w-full"
                                     >
                                         Add Field
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -176,15 +165,15 @@ export default function Create() {
                         {/* Fields List */}
                         {data.fields.length > 0 ? (
                             <div className="space-y-2">
-                                <h3 className="text-sm font-medium text-gray-700">Added Fields</h3>
+                                <h3 className="text-sm font-medium">Added Fields</h3>
                                 {data.fields.map((field, index) => (
                                     <div
                                         key={index}
-                                        className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+                                        className="flex items-center justify-between rounded-lg bg-muted p-3"
                                     >
                                         <div className="flex-1">
-                                            <p className="font-medium text-gray-900">{field.display_name}</p>
-                                            <p className="text-xs text-gray-500">
+                                            <p className="font-medium">{field.display_name}</p>
+                                            <p className="text-xs text-muted-foreground">
                                                 {field.name} • {field.type}
                                             </p>
                                         </div>
@@ -205,28 +194,29 @@ export default function Create() {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-center text-sm text-gray-500">No fields added yet</p>
+                            <p className="text-center text-sm text-muted-foreground">No fields added yet</p>
                         )}
 
                         {errors.fields && <p className="mt-4 text-sm text-red-600">{errors.fields}</p>}
-                    </div>
+                        </CardContent>
+                    </Card>
 
                     {/* Form Actions */}
                     <div className="flex gap-4">
-                        <button
+                        <Button
                             type="submit"
                             disabled={processing || data.fields.length === 0}
-                            className="flex-1 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1"
                         >
                             {processing ? 'Creating...' : 'Create Table'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
                             onClick={() => window.history.back()}
-                            className="rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition"
+                            variant="outline"
                         >
                             Cancel
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>
