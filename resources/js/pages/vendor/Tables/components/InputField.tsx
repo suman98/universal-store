@@ -8,6 +8,25 @@ interface InputFieldProps {
     onChange: (value: any) => void;
 }
 
+const formatDateForInput = (value: any): string => {
+    if (!value) return '';
+    
+    // If it's already in YYYY-MM-DD format, return as-is
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+    }
+    
+    // Convert to Date object and format as YYYY-MM-DD
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return '';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+};
+
 export default function InputField({ column, value, onChange }: InputFieldProps) {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let inputValue: any = e.target.value;
@@ -45,7 +64,7 @@ export default function InputField({ column, value, onChange }: InputFieldProps)
                         : column.type === 'boolean'
                           ? value === null || value === undefined ? '' : value
                           : column.type === 'date'
-                            ? (value ?? '')
+                            ? formatDateForInput(value)
                             : (value === null || value === undefined ? '' : value)
                 }
                 onChange={handleChange}
