@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import {
     Plus,
     Trash2,
@@ -76,7 +76,6 @@ export default function Edit() {
         columns: table.columns,
     });
 
-    const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
     const [newColumn, setNewColumn] = useState({ display_name: '', type: 'string' });
     const [showNewColumnForm, setShowNewColumnForm] = useState(false);
     const [columnErrors, setColumnErrors] = useState<{ [key: number | string]: string }>({});
@@ -194,28 +193,19 @@ export default function Edit() {
     const handleDeleteTable = () => {
         setIsDeleting(true);
         
-        const deleteUrl = route('vendor.tables.destroy', table.id);
-        
-        fetch(deleteUrl, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        router.delete(route('vendor.tables.destroy', table.id), {
+            onSuccess: () => {
+                setShowDeleteDialog(false);
+                toast.success('Table and all related fields deleted successfully');
             },
-        })
-            .then((response) => {
-                if (response.ok) {
-                    toast.success('Table and all related fields deleted successfully');
-                    window.location.href = route('vendor.tables.index');
-                } else {
-                    throw new Error('Failed to delete table');
-                }
-            })
-            .catch((error) => {
+            onError: () => {
                 setIsDeleting(false);
                 toast.error('Error deleting table. Please try again.');
-                console.error('Delete error:', error);
-            });
+            },
+            onFinish: () => {
+                router.visit(route('vendor.tables.index'));
+            },
+        });
     };
 
     return (

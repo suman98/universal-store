@@ -101,14 +101,24 @@ class CsTableController extends Controller
 
     public function destroy(CsTable $table)
     {
+     
         try {
+            // Eager load rows with their values, then bulk delete all values, rows, and columns
+            $table->load('rows.values');
+            // Delete all values for all rows in one query
+            CsColumn::whereIn('row_id', $table->rows->pluck('id'))->delete();
+            // Delete all rows in one query
+            $table->rows()->delete();
+            // Delete all columns in one query
+            $table->columns()->delete();
+            // Finally, delete the table
             $table->delete();
 
-            return redirect()->route('vendor.tables.index')->with('success', 'Table deleted successfully');
+            return redirect()->route('vendor.tables.index')->with('success', 'Table and related fields deleted successfully');
         } catch (\Exception $e) {
-            Log::error('Error deleting table: '.$e->getMessage());
+            Log::error('Error deleting table and related fields: '.$e->getMessage());
 
-            return back()->with('error', 'Error deleting table: '.$e->getMessage());
+            return back()->with('error', 'Error deleting table and related fields: '.$e->getMessage());
         }
     }
 }
