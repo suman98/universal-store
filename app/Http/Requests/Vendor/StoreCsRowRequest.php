@@ -24,7 +24,12 @@ class StoreCsRowRequest extends FormRequest
     {
         return [
             'values' => 'required|array',
-            'values.*' => 'array',
+            'values.*.value_string' => 'nullable|string',
+            'values.*.value_number' => 'nullable|numeric',
+            'values.*.value_date' => 'nullable|date',
+            'values.*.value_boolean' => 'nullable|boolean',
+            'values.*.value_json' => 'nullable|json',
+            'values.*.value_text' => 'nullable|string',
         ];
     }
 }

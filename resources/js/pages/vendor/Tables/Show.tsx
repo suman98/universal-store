@@ -38,37 +38,71 @@ interface Table {
 }
 
 export default function Show() {
-    const { table, columns, rows } = usePage().props as {
+    const { table, columns, rows } = usePage().props as unknown as {
         table: Table;
         columns: Column[];
         rows: Row[];
     };
 
     const [showNewRowForm, setShowNewRowForm] = useState(false);
-    const { data, setData, post, processing, reset } = useForm<Record<number, Record<string, any>>>({});
+    const [editingRowId, setEditingRowId] = useState<number | null>(null);
+    const [deletingRowId, setDeletingRowId] = useState<number | null>(null);
+
+    const { data, setData, post, processing, reset } = useForm({
+        values: {} as Record<number, Record<string, any>>,
+    });
+
+    const { put: updateRow, delete: deleteRow, processing: updateProcessing } = useForm({
+        values: {} as Record<number, Record<string, any>>,
+    });
 
     const handleAddRow = () => {
-        const formData = new FormData();
-        const values: Record<number, any> = {};
-
-        columns.forEach((col) => {
-            values[col.id] = {
-                value_string: data[col.id]?.value_string || null,
-                value_number: data[col.id]?.value_number || null,
-                value_date: data[col.id]?.value_date || null,
-                value_boolean: data[col.id]?.value_boolean || null,
-                value_json: data[col.id]?.value_json || null,
-                value_text: data[col.id]?.value_text || null,
-            };
-        });
-
         post(route('vendor.rows.store', table.id), {
-            data: { values },
             onSuccess: () => {
                 reset();
                 setShowNewRowForm(false);
             },
         });
+    };
+
+    const handleEditRow = (row: Row) => {
+        setEditingRowId(row.id);
+        const editData: Record<number, Record<string, any>> = {};
+
+        columns.forEach((col) => {
+            const cellValue = row.values.find((v) => v.column_id === col.id);
+            editData[col.id] = {
+                value_string: cellValue?.value_string || null,
+                value_number: cellValue?.value_number || null,
+                value_date: cellValue?.value_date || null,
+                value_boolean: cellValue?.value_boolean || null,
+                value_json: cellValue?.value_json || null,
+                value_text: cellValue?.value_text || null,
+            };
+        });
+
+        updateRow.setData('values', editData);
+    };
+
+    const handleSaveEdit = () => {
+        if (editingRowId) {
+            updateRow.put(route('vendor.rows.update', { tableId: table.id, id: editingRowId }), {
+                onSuccess: () => {
+                    setEditingRowId(null);
+                    updateRow.reset();
+                },
+            });
+        }
+    };
+
+    const handleDeleteRow = (rowId: number) => {
+        if (confirm('Are you sure you want to delete this row?')) {
+            deleteRow.delete(route('vendor.rows.destroy', { tableId: table.id, id: rowId }), {
+                onSuccess: () => {
+                    setDeletingRowId(null);
+                },
+            });
+        }
     };
 
     const getCellValue = (row: Row, column: Column) => {
@@ -81,7 +115,9 @@ export default function Show() {
             case 'number':
                 return cellValue.value_number;
             case 'date':
-                return cellValue.value_date ? new Date(cellValue.value_date).toLocaleDateString() : null;
+                return cellValue.value_date
+                    ? new Date(cellValue.value_date).toLocaleDateString()
+                    : null;
             case 'boolean':
                 return cellValue.value_boolean ? 'Yes' : 'No';
             case 'text':
@@ -103,7 +139,9 @@ export default function Show() {
                     <div className="flex items-start justify-between">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">{table.display_name}</h1>
-                            {table.description && <p className="mt-2 text-gray-600">{table.description}</p>}
+                            {table.description && (
+                                <p className="mt-2 text-gray-600">{table.description}</p>
+                            )}
                         </div>
                         <div className="flex gap-2">
                             <Link
@@ -123,7 +161,7 @@ export default function Show() {
                 </div>
 
                 {/* Add New Row Button */}
-                {!showNewRowForm && (
+                {!showNewRowForm && editingRowId === null && (
                     <div className="mb-6">
                         <button
                             onClick={() => setShowNewRowForm(true)}
@@ -135,7 +173,7 @@ export default function Show() {
                 )}
 
                 {/* New Row Form */}
-                {showNewRowForm && (
+                {showNewRowForm && editingRowId === null && (
                     <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-6">
                         <h3 className="mb-4 text-lg font-semibold text-gray-900">Add New Row</h3>
                         <div className="space-y-4">
@@ -145,22 +183,32 @@ export default function Show() {
                                         {column.display_name}
                                     </label>
                                     <input
-                                        type={column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text'}
+                                        type={
+                                            column.type === 'number'
+                                                ? 'number'
+                                                : column.type === 'date'
+                                                  ? 'date'
+                                                  : 'text'
+                                        }
                                         value={
-                                            data[column.id]?.[`value_${column.type}`] === null ||
-                                            data[column.id]?.[`value_${column.type}`] === undefined
+                                            data.values[column.id]?.[`value_${column.type}`] ===
+                                                null ||
+                                            data.values[column.id]?.[`value_${column.type}`] ===
+                                                undefined
                                                 ? ''
-                                                : data[column.id]?.[`value_${column.type}`] || ''
+                                                : data.values[column.id]?.[
+                                                      `value_${column.type}`
+                                                  ] || ''
                                         }
                                         onChange={(e) => {
                                             const value = e.target.value;
-                                            setData((prevData) => ({
-                                                ...prevData,
+                                            setData('values', {
+                                                ...data.values,
                                                 [column.id]: {
-                                                    ...prevData[column.id],
+                                                    ...data.values[column.id],
                                                     [`value_${column.type}`]: value || null,
                                                 },
-                                            }));
+                                            });
                                         }}
                                         className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                         placeholder={`Enter ${column.display_name}`}
@@ -189,11 +237,80 @@ export default function Show() {
                     </div>
                 )}
 
+                {/* Edit Row Form */}
+                {editingRowId !== null && (
+                    <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">Edit Row</h3>
+                        <div className="space-y-4">
+                            {columns.map((column) => (
+                                <div key={column.id}>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        {column.display_name}
+                                    </label>
+                                    <input
+                                        type={
+                                            column.type === 'number'
+                                                ? 'number'
+                                                : column.type === 'date'
+                                                  ? 'date'
+                                                  : 'text'
+                                        }
+                                        value={
+                                            updateRow.data.values[column.id]?.[
+                                                `value_${column.type}`
+                                            ] === null ||
+                                            updateRow.data.values[column.id]?.[
+                                                `value_${column.type}`
+                                            ] === undefined
+                                                ? ''
+                                                : updateRow.data.values[column.id]?.[
+                                                      `value_${column.type}`
+                                                  ] || ''
+                                        }
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            updateRow.setData('values', {
+                                                ...updateRow.data.values,
+                                                [column.id]: {
+                                                    ...updateRow.data.values[column.id],
+                                                    [`value_${column.type}`]: value || null,
+                                                },
+                                            });
+                                        }}
+                                        className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                        placeholder={`Enter ${column.display_name}`}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-6 flex gap-2">
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={updateProcessing}
+                                className="rounded-lg bg-amber-600 px-6 py-2 font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50"
+                            >
+                                {updateProcessing ? 'Saving...' : 'Save Changes'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingRowId(null);
+                                    updateRow.reset();
+                                }}
+                                className="rounded-lg border border-gray-300 px-6 py-2 font-semibold text-gray-700 hover:bg-gray-50 transition"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Table Data */}
                 <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
                     {rows.length === 0 ? (
                         <div className="p-8 text-center">
-                            <p className="text-gray-500">No data yet. Add your first row to get started.</p>
+                            <p className="text-gray-500">
+                                No data yet. Add your first row to get started.
+                            </p>
                         </div>
                     ) : (
                         <table className="min-w-full divide-y divide-gray-200">
@@ -224,8 +341,23 @@ export default function Show() {
                                             </td>
                                         ))}
                                         <td className="px-6 py-4 text-sm font-medium space-x-2 whitespace-nowrap">
-                                            <button className="text-blue-600 hover:text-blue-900">Edit</button>
-                                            <button className="text-red-600 hover:text-red-900">Delete</button>
+                                            <button
+                                                onClick={() => handleEditRow(row)}
+                                                disabled={editingRowId !== null}
+                                                className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteRow(row.id)}
+                                                disabled={
+                                                    editingRowId !== null ||
+                                                    deletingRowId === row.id
+                                                }
+                                                className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                                            >
+                                                Delete
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

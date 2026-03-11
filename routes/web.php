@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Vendor\CsRowController;
 use App\Http\Controllers\Vendor\CsTableController;
+use App\Http\Controllers\PrettyRoutesController;
+
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -18,6 +20,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('tables/{table}/rows/{row}', [CsRowController::class, 'update'])->name('rows.update');
         Route::delete('tables/{table}/rows/{row}', [CsRowController::class, 'destroy'])->name('rows.destroy');
     });
+    Route::get('routes', [PrettyRoutesController::class, 'show'])->name('pretty-routes');
+
 });
 
 require __DIR__.'/settings.php';
