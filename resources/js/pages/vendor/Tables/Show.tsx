@@ -7,7 +7,7 @@ import AddRowButton from './components/AddRowButton';
 import ContentContainer from './components/ContentContainer';
 import DataTable from './components/DataTable';
 import EditModal from './components/EditModal';
-import NewRowForm from './components/NewRowForm';
+import NewRowModal from './components/NewRowModal';
 import PageContainer from './components/PageContainer';
 import PageHeader from './components/PageHeader';
 import RowCounter from './components/RowCounter';
@@ -88,31 +88,28 @@ export default function Show() {
 
             <ContentContainer>
                 {/* Add Row Button */}
-                {!showNewRowForm && editingRowId === null && (
-                    <AddRowButton onClick={() => setShowNewRowForm(true)} />
-                )}
+                <AddRowButton onClick={() => setShowNewRowForm(true)} />
 
-                {/* New Row Form */}
-                {showNewRowForm && editingRowId === null && (
-                    <NewRowForm
-                        columns={columns}
-                        formData={data.values}
-                        isLoading={processing}
-                        onFieldChange={handleAddRowFieldChange}
-                        onSave={() => {
-                            post(route('vendor.rows.store', table.id), {
-                                onSuccess: () => {
-                                    reset();
-                                    setShowNewRowForm(false);
-                                },
-                            });
-                        }}
-                        onCancel={() => {
-                            reset();
-                            setShowNewRowForm(false);
-                        }}
-                    />
-                )}
+                {/* New Row Modal */}
+                <NewRowModal
+                    isOpen={showNewRowForm}
+                    columns={columns}
+                    formData={data.values}
+                    isLoading={processing}
+                    onFieldChange={handleAddRowFieldChange}
+                    onSave={() => {
+                        post(route('vendor.rows.store', table.id), {
+                            onSuccess: () => {
+                                reset();
+                                setShowNewRowForm(false);
+                            },
+                        });
+                    }}
+                    onCancel={() => {
+                        reset();
+                        setShowNewRowForm(false);
+                    }}
+                />
 
                 {/* Edit Row Modal */}
                 <EditModal
