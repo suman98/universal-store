@@ -93,4 +93,3 @@ test('user can delete a table', function () {
 
     expect(CsTable::find($table->id))->toBeNull();
 });
-

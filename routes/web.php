@@ -1,9 +1,8 @@
 <?php
 
+use App\Http\Controllers\PrettyRoutesController;
 use App\Http\Controllers\Vendor\CsRowController;
 use App\Http\Controllers\Vendor\CsTableController;
-use App\Http\Controllers\PrettyRoutesController;
-
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 

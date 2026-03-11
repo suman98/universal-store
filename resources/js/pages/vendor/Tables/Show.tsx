@@ -1,6 +1,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { route } from '@/lib/route';
+import { toast } from '@/components/ui/toast';
 
 // Components
 import AddRowButton from './components/AddRowButton';
@@ -17,16 +18,33 @@ import type { Table, Column, Row } from './components/types';
 import { getEditDataFromRow, transformFlatDataToNested } from './components/utils';
 
 export default function Show() {
-    const { table, columns, rows } = usePage().props as unknown as {
+    const props = usePage().props as unknown as {
         table: Table;
         columns: Column[];
         rows: Row[];
+        success?: string;
+        error?: string;
     };
+    
+    const { table, columns, rows, success, error } = props;
 
     const [showNewRowForm, setShowNewRowForm] = useState(false);
     const [editingRowId, setEditingRowId] = useState<number | null>(null);
     const [editingData, setEditingData] = useState<Record<number, any>>({});
     const [deletingRowId, setDeletingRowId] = useState<number | null>(null);
+
+    // Display flash messages
+    useEffect(() => {
+        if (success) {
+            toast.success(success);
+        }
+    }, [success]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
 
     const { data, setData, post, processing, reset } = useForm({
         values: {} as Record<number, Record<string, any>>,

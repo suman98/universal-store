@@ -7,6 +7,7 @@ use App\Http\Requests\Vendor\StoreCsTableRequest;
 use App\Http\Requests\Vendor\UpdateCsTableRequest;
 use App\Models\CsColumn;
 use App\Models\CsTable;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class CsTableController extends Controller
@@ -29,33 +30,39 @@ class CsTableController extends Controller
 
     public function store(StoreCsTableRequest $request)
     {
-        $org = auth()->user()->organizations()->first();
+        try {
+            $org = auth()->user()->organizations()->first();
 
-        if (! $org) {
-            return back()->withErrors(['organization' => 'No organization found']);
-        }
-
-        $table = CsTable::create([
-            'name' => $request->name,
-            'display_name' => $request->display_name,
-            'description' => $request->description,
-            'org_id' => $org->id,
-        ]);
-
-        // Create columns
-        if ($request->has('fields')) {
-            foreach ($request->fields as $position => $field) {
-                CsColumn::create([
-                    'name' => $field['name'],
-                    'display_name' => $field['display_name'],
-                    'table_id' => $table->id,
-                    'type' => $field['type'],
-                    'position' => $position,
-                ]);
+            if (! $org) {
+                return back()->withErrors(['organization' => 'No organization found']);
             }
-        }
 
-        return redirect()->route('vendor.tables.show', $table)->with('message', 'Table created successfully');
+            $table = CsTable::create([
+                'name' => $request->name,
+                'display_name' => $request->display_name,
+                'description' => $request->description,
+                'org_id' => $org->id,
+            ]);
+
+            // Create columns
+            if ($request->has('fields')) {
+                foreach ($request->fields as $position => $field) {
+                    CsColumn::create([
+                        'name' => $field['name'],
+                        'display_name' => $field['display_name'],
+                        'table_id' => $table->id,
+                        'type' => $field['type'],
+                        'position' => $position,
+                    ]);
+                }
+            }
+
+            return redirect()->route('vendor.tables.show', $table)->with('success', 'Table created successfully');
+        } catch (\Exception $e) {
+            Log::error('Error creating table: '.$e->getMessage());
+
+            return back()->with('error', 'Error creating table: '.$e->getMessage());
+        }
     }
 
     public function show(CsTable $table)
@@ -78,18 +85,30 @@ class CsTableController extends Controller
 
     public function update(UpdateCsTableRequest $request, CsTable $table)
     {
-        $table->update([
-            'display_name' => $request->display_name,
-            'description' => $request->description,
-        ]);
+        try {
+            $table->update([
+                'display_name' => $request->display_name,
+                'description' => $request->description,
+            ]);
 
-        return redirect()->route('vendor.tables.show', $table)->with('message', 'Table updated successfully');
+            return redirect()->route('vendor.tables.show', $table)->with('success', 'Table updated successfully');
+        } catch (\Exception $e) {
+            Log::error('Error updating table: '.$e->getMessage());
+
+            return back()->with('error', 'Error updating table: '.$e->getMessage());
+        }
     }
 
     public function destroy(CsTable $table)
     {
-        $table->delete();
+        try {
+            $table->delete();
 
-        return redirect()->route('vendor.tables.index')->with('message', 'Table deleted successfully');
+            return redirect()->route('vendor.tables.index')->with('success', 'Table deleted successfully');
+        } catch (\Exception $e) {
+            Log::error('Error deleting table: '.$e->getMessage());
+
+            return back()->with('error', 'Error deleting table: '.$e->getMessage());
+        }
     }
 }

@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { route } from '@/lib/route';
+import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -14,8 +15,27 @@ interface Table {
 }
 
 export default function Index() {
-    const { tables } = usePage().props as { tables: Table[] };
+    const props = usePage().props as {
+        tables: Table[];
+        success?: string;
+        error?: string;
+    };
+    
+    const { tables, success, error } = props;
     const [localTables, setLocalTables] = useState<Table[]>(tables);
+
+    // Display flash messages
+    useEffect(() => {
+        if (success) {
+            toast.success(success);
+        }
+    }, [success]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
 
     useEffect(() => {
         setLocalTables(tables);

@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { route } from '@/lib/route';
+import { toast } from '@/components/ui/toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,24 @@ export default function Create() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('vendor.tables.store'));
+        
+        // Show validation error if no fields added
+        if (data.fields.length === 0) {
+            toast.error('Please add at least one field');
+            return;
+        }
+        
+        post(route('vendor.tables.store'), {
+            onError: (errors: any) => {
+                // Show first error as toast
+                const errorMessages = Object.values(errors).flat();
+                if (errorMessages.length > 0) {
+                    toast.error(errorMessages[0] as string);
+                } else {
+                    toast.error('Error creating table');
+                }
+            },
+        });
     };
 
     return (

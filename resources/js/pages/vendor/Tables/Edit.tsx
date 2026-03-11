@@ -1,5 +1,7 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { route } from '@/lib/route';
+import { toast } from '@/components/ui/toast';
 
 interface Column {
     id: number;
@@ -18,17 +20,44 @@ interface Table {
 }
 
 export default function Edit() {
-    const { table } = usePage().props as { table: Table };
+    const props = usePage().props as {
+        table: Table;
+        success?: string;
+        error?: string;
+    };
+    
+    const { table, success, error } = props;
     const { data, setData, put, errors, processing } = useForm({
         display_name: table.display_name,
         description: table.description || '',
     });
+
+    // Display flash messages
+    useEffect(() => {
+        if (success) {
+            toast.success(success);
+        }
+    }, [success]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         put(route('vendor.tables.update', table.id), {
             onSuccess: () => {
                 window.history.back();
+            },
+            onError: (errors: any) => {
+                const errorMessages = Object.values(errors).flat();
+                if (errorMessages.length > 0) {
+                    toast.error(errorMessages[0] as string);
+                } else {
+                    toast.error('Error updating table');
+                }
             },
         });
     };

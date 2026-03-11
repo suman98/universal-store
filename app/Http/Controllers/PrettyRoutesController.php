@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\HistoryPriceAdjusted;
 use Closure;
 use Illuminate\Support\Facades\Route;
 
