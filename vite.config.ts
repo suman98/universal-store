@@ -10,6 +10,7 @@ export default defineConfig({
         codeInspectorPlugin({
             bundler: 'vite',
             hotKeys: ['altKey'],
+            exclude: ['resources/js/components/**'],
           }),
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
