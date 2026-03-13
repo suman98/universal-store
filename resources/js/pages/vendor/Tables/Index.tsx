@@ -15,7 +15,7 @@ interface Table {
 }
 
 export default function Index() {
-    const props = usePage().props as {
+    const props = usePage().props as unknown as {
         tables: Table[];
         success?: string;
         error?: string;
@@ -23,7 +23,7 @@ export default function Index() {
     
     const { tables, success, error } = props;
     const [localTables, setLocalTables] = useState<Table[]>(tables);
-
+  
     // Display flash messages
     useEffect(() => {
         if (success) {

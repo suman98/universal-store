@@ -85,16 +85,35 @@ class CsTableController extends Controller
 
     public function update(UpdateCsTableRequest $request, CsTable $table)
     {
+
         try {
             $table->update([
                 'display_name' => $request->display_name,
                 'description' => $request->description,
             ]);
+            // Update columns if provided in the request
+            if ($request->has('columns')) {
+                foreach ($request->columns as $position => $field) {
+                    // Try to find the column by its id, fallback or skip if not found
+                    CsColumn::updateOrCreate(
+                        [
+                            'id' => $field['id'] ?? null,
+                            'table_id' => $table->id
+                        ],
+                        [
+                            'name' => $field['name'],
+                            'display_name' => $field['display_name'],
+                            'type' => $field['type'],
+                            'position' => $position,
+                        ]
+                    );
+                }
+            }
 
             return redirect()->route('vendor.tables.show', $table)->with('success', 'Table updated successfully');
         } catch (\Exception $e) {
             Log::error('Error updating table: '.$e->getMessage());
-
+            
             return back()->with('error', 'Error updating table: '.$e->getMessage());
         }
     }

@@ -1,9 +1,8 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { X, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { toast } from '@/components/ui/toast';
-import { route } from '@/lib/route';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
     Select, 
     SelectContent, 
@@ -11,7 +10,9 @@ import {
     SelectTrigger, 
     SelectValue 
 } from '@/components/ui/select';
-import { X, Search, Filter, ArrowUpDown } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import AppLayout from '@/layouts/app-layout';
+import { route } from '@/lib/route';
 
 // Components
 import AddRowButton from './components/AddRowButton';
@@ -22,10 +23,64 @@ import NewRowModal from './components/NewRowModal';
 import PageContainer from './components/PageContainer';
 import PageHeader from './components/PageHeader';
 import RowCounter from './components/RowCounter';
-import AppLayout from '@/layouts/app-layout';
 // Types & Utils
 import type { Table, Column, Row } from './components/types';
 import { getEditDataFromRow, transformFlatDataToNested } from './components/utils';
+
+// Helper function to check if a value matches a filter based on column type
+function matchesFilter(
+    cellValue: any,
+    filterValue: any,
+    columnType: string
+): boolean {
+    if (!filterValue && filterValue !== false && filterValue !== 0) return true;
+
+    switch (columnType) {
+        case 'number':
+            const numValue = Number(cellValue);
+            if (filterValue.comparison) {
+                const filterNum = Number(filterValue.value);
+                switch (filterValue.comparison) {
+                    case 'equals':
+                        return numValue === filterNum;
+                    case 'greater':
+                        return numValue > filterNum;
+                    case 'less':
+                        return numValue < filterNum;
+                    case 'greaterOrEqual':
+                        return numValue >= filterNum;
+                    case 'lessOrEqual':
+                        return numValue <= filterNum;
+                    default:
+                        return true;
+                }
+            }
+            return String(numValue).includes(String(filterValue));
+
+        case 'boolean':
+            return String(cellValue).toLowerCase() === String(filterValue).toLowerCase();
+
+        case 'date':
+            if (filterValue.startDate && filterValue.endDate) {
+                const cellDate = new Date(cellValue).getTime();
+                const startDate = new Date(filterValue.startDate).getTime();
+                const endDate = new Date(filterValue.endDate).getTime();
+                return cellDate >= startDate && cellDate <= endDate;
+            } else if (filterValue.startDate) {
+                return new Date(cellValue).getTime() >= new Date(filterValue.startDate).getTime();
+            } else if (filterValue.endDate) {
+                return new Date(cellValue).getTime() <= new Date(filterValue.endDate).getTime();
+            } else if (filterValue.value) {
+                return cellValue.includes(filterValue.value);
+            }
+            return true;
+
+        case 'string':
+        case 'text':
+        default:
+            return String(cellValue).toLowerCase().includes(String(filterValue).toLowerCase());
+    }
+}
 
 export default function Show() {
     const props = usePage().props as unknown as {
@@ -47,7 +102,7 @@ export default function Show() {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortColumn, setSortColumn] = useState<number | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-    const [filters, setFilters] = useState<Record<number, string>>({});
+    const [filters, setFilters] = useState<Record<number, any>>({});
 
     // Display flash messages
     useEffect(() => {
@@ -76,7 +131,7 @@ export default function Show() {
 
     // Filter and sort rows
     const filteredAndSortedRows = useMemo(() => {
-        let filtered = rows.filter(row => {
+        const filtered = rows.filter(row => {
             // Search filter
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
@@ -90,11 +145,14 @@ export default function Show() {
 
             // Column filters
             const matchesFilters = Object.entries(filters).every(([colId, filterValue]) => {
-                if (!filterValue) return true;
                 const columnId = Number(colId);
+                const column = columns.find(c => c.id === columnId);
+                if (!column) return true;
+
                 const cellValue = row.cell_values?.find(cv => cv.column_id === columnId);
-                const value = cellValue?.[`value_${columns.find(c => c.id === columnId)?.type}`] ?? '';
-                return String(value).toLowerCase().includes(filterValue.toLowerCase());
+                const value = cellValue?.[`value_${column.type}`] ?? '';
+
+                return matchesFilter(value, filterValue, column.type);
             });
             
             return matchesFilters;
@@ -255,21 +313,110 @@ export default function Show() {
                         <div className="flex items-center gap-2 flex-wrap">
                             <Filter className="h-4 w-4 text-muted-foreground" />
                             {columns.map(col => (
-                                <Input
-                                    key={col.id}
-                                    placeholder={`Filter ${col.display_name}...`}
-                                    value={filters[col.id] || ''}
-                                    onChange={(e) => setFilters({
-                                        ...filters,
-                                        [col.id]: e.target.value
-                                    })}
-                                    className="w-[150px]"
-                                />
+                                <div key={col.id} className="flex items-center gap-2">
+                                    {col.type === 'number' && (
+                                        <>
+                                            <Select 
+                                                value={filters[col.id]?.comparison || 'equals'}
+                                                onValueChange={(val) => setFilters({
+                                                    ...filters,
+                                                    [col.id]: {
+                                                        ...filters[col.id],
+                                                        comparison: val
+                                                    }
+                                                })}
+                                            >
+                                                <SelectTrigger className="w-[100px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="equals">Equals</SelectItem>
+                                                    <SelectItem value="greater">&gt;</SelectItem>
+                                                    <SelectItem value="less">&lt;</SelectItem>
+                                                    <SelectItem value="greaterOrEqual">≥</SelectItem>
+                                                    <SelectItem value="lessOrEqual">≤</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Input
+                                                type="number"
+                                                placeholder={`${col.display_name}`}
+                                                value={filters[col.id]?.value || ''}
+                                                onChange={(e) => setFilters({
+                                                    ...filters,
+                                                    [col.id]: {
+                                                        ...filters[col.id],
+                                                        value: e.target.value
+                                                    }
+                                                })}
+                                                className="w-[120px]"
+                                            />
+                                        </>
+                                    )}
+                                    {col.type === 'boolean' && (
+                                        <Select 
+                                            value={filters[col.id] || ''}
+                                            onValueChange={(val) => setFilters({
+                                                ...filters,
+                                                [col.id]: val
+                                            })}
+                                        >
+                                            <SelectTrigger className="w-[140px]">
+                                                <SelectValue placeholder={col.display_name} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="">All</SelectItem>
+                                                <SelectItem value="true">True</SelectItem>
+                                                <SelectItem value="false">False</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                    {col.type === 'date' && (
+                                        <>
+                                            <Input
+                                                type="date"
+                                                placeholder="From"
+                                                value={filters[col.id]?.startDate || ''}
+                                                onChange={(e) => setFilters({
+                                                    ...filters,
+                                                    [col.id]: {
+                                                        ...filters[col.id],
+                                                        startDate: e.target.value
+                                                    }
+                                                })}
+                                                className="w-[130px]"
+                                            />
+                                            <Input
+                                                type="date"
+                                                placeholder="To"
+                                                value={filters[col.id]?.endDate || ''}
+                                                onChange={(e) => setFilters({
+                                                    ...filters,
+                                                    [col.id]: {
+                                                        ...filters[col.id],
+                                                        endDate: e.target.value
+                                                    }
+                                                })}
+                                                className="w-[130px]"
+                                            />
+                                        </>
+                                    )}
+                                    {(col.type === 'string' || col.type === 'text') && (
+                                        <Input
+                                            placeholder={`${col.display_name}`}
+                                            value={filters[col.id] || ''}
+                                            onChange={(e) => setFilters({
+                                                ...filters,
+                                                [col.id]: e.target.value
+                                            })}
+                                            className="w-[150px]"
+                                        />
+                                    )}
+                                </div>
                             ))}
                         </div>
 
                         {/* Clear All Button */}
-                        {(searchQuery || sortColumn || Object.values(filters).some(f => f)) && (
+                        {(searchQuery || sortColumn || Object.values(filters).some(f => f !== undefined && f !== '' && f !== null)) && (
                             <Button
                                 size="sm"
                                 variant="ghost"
@@ -287,12 +434,12 @@ export default function Show() {
                 </div>
 
                 {/* Results Info */}
-                {(searchQuery || sortColumn || Object.values(filters).some(f => f)) && (
+                {(searchQuery || sortColumn || Object.values(filters).some(f => f !== undefined && f !== '' && f !== null)) && (
                     <div className="mb-4 text-sm text-muted-foreground">
                         Showing {filteredAndSortedRows.length} of {rows.length} rows
                         {searchQuery && <span> (search)</span>}
                         {sortColumn && <span> (sorted)</span>}
-                        {Object.values(filters).some(f => f) && <span> (filtered)</span>}
+                        {Object.values(filters).some(f => f !== undefined && f !== '' && f !== null) && <span> (filtered)</span>}
                     </div>
                 )}
 
