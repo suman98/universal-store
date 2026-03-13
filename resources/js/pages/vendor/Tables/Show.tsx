@@ -1,8 +1,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
-import { X, Search, Filter, ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
     Select, 
     SelectContent, 
@@ -23,64 +22,11 @@ import NewRowModal from './components/NewRowModal';
 import PageContainer from './components/PageContainer';
 import PageHeader from './components/PageHeader';
 import RowCounter from './components/RowCounter';
+import { FilterControls, matchesFilter, isFilterActive } from './components/filters';
+
 // Types & Utils
 import type { Table, Column, Row } from './components/types';
 import { getEditDataFromRow, transformFlatDataToNested } from './components/utils';
-
-// Helper function to check if a value matches a filter based on column type
-function matchesFilter(
-    cellValue: any,
-    filterValue: any,
-    columnType: string
-): boolean {
-    if (!filterValue && filterValue !== false && filterValue !== 0) return true;
-
-    switch (columnType) {
-        case 'number':
-            const numValue = Number(cellValue);
-            if (filterValue.comparison) {
-                const filterNum = Number(filterValue.value);
-                switch (filterValue.comparison) {
-                    case 'equals':
-                        return numValue === filterNum;
-                    case 'greater':
-                        return numValue > filterNum;
-                    case 'less':
-                        return numValue < filterNum;
-                    case 'greaterOrEqual':
-                        return numValue >= filterNum;
-                    case 'lessOrEqual':
-                        return numValue <= filterNum;
-                    default:
-                        return true;
-                }
-            }
-            return String(numValue).includes(String(filterValue));
-
-        case 'boolean':
-            return String(cellValue).toLowerCase() === String(filterValue).toLowerCase();
-
-        case 'date':
-            if (filterValue.startDate && filterValue.endDate) {
-                const cellDate = new Date(cellValue).getTime();
-                const startDate = new Date(filterValue.startDate).getTime();
-                const endDate = new Date(filterValue.endDate).getTime();
-                return cellDate >= startDate && cellDate <= endDate;
-            } else if (filterValue.startDate) {
-                return new Date(cellValue).getTime() >= new Date(filterValue.startDate).getTime();
-            } else if (filterValue.endDate) {
-                return new Date(cellValue).getTime() <= new Date(filterValue.endDate).getTime();
-            } else if (filterValue.value) {
-                return cellValue.includes(filterValue.value);
-            }
-            return true;
-
-        case 'string':
-        case 'text':
-        default:
-            return String(cellValue).toLowerCase().includes(String(filterValue).toLowerCase());
-    }
-}
 
 export default function Show() {
     const props = usePage().props as unknown as {
@@ -247,200 +193,30 @@ export default function Show() {
                 {/* Add Row Button */}
                 <AddRowButton onClick={() => setShowNewRowForm(true)} />
 
-                {/* Search, Filter, Sort Controls */}
-                <div className="space-y-4 mb-6">
-                    {/* Search Bar */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search all columns..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9"
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Sort and Filter Controls */}
-                    <div className="flex gap-3 flex-wrap">
-                        <div className="flex items-center gap-2">
-                            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                            <Select 
-                                value={sortColumn?.toString() || 'none'}
-                                onValueChange={(val) => setSortColumn(val !== 'none' ? Number(val) : null)}
-                            >
-                                <SelectTrigger className="w-[200px]">
-                                    <SelectValue placeholder="Sort by..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {columns.map(col => (
-                                        <SelectItem key={col.id} value={col.id.toString()}>
-                                            {col.display_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {sortColumn !== null && (
-                                <>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                                        className="gap-1"
-                                    >
-                                        {sortDirection === 'asc' ? '↑ Asc' : '↓ Desc'}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setSortColumn(null)}
-                                        className="text-destructive hover:text-destructive"
-                                    >
-                                        Clear Sort
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Column Filters */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                            {columns.map(col => (
-                                <div key={col.id} className="flex items-center gap-2">
-                                    {col.type === 'number' && (
-                                        <>
-                                            <Select 
-                                                value={filters[col.id]?.comparison || 'equals'}
-                                                onValueChange={(val) => setFilters({
-                                                    ...filters,
-                                                    [col.id]: {
-                                                        ...filters[col.id],
-                                                        comparison: val
-                                                    }
-                                                })}
-                                            >
-                                                <SelectTrigger className="w-[100px]">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="equals">Equals</SelectItem>
-                                                    <SelectItem value="greater">&gt;</SelectItem>
-                                                    <SelectItem value="less">&lt;</SelectItem>
-                                                    <SelectItem value="greaterOrEqual">≥</SelectItem>
-                                                    <SelectItem value="lessOrEqual">≤</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <Input
-                                                type="number"
-                                                placeholder={`${col.display_name}`}
-                                                value={filters[col.id]?.value || ''}
-                                                onChange={(e) => setFilters({
-                                                    ...filters,
-                                                    [col.id]: {
-                                                        ...filters[col.id],
-                                                        value: e.target.value
-                                                    }
-                                                })}
-                                                className="w-[120px]"
-                                            />
-                                        </>
-                                    )}
-                                    {col.type === 'boolean' && (
-                                        <Select 
-                                            value={filters[col.id] || ''}
-                                            onValueChange={(val) => setFilters({
-                                                ...filters,
-                                                [col.id]: val
-                                            })}
-                                        >
-                                            <SelectTrigger className="w-[140px]">
-                                                <SelectValue placeholder={col.display_name} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="">All</SelectItem>
-                                                <SelectItem value="true">True</SelectItem>
-                                                <SelectItem value="false">False</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                    {col.type === 'date' && (
-                                        <>
-                                            <Input
-                                                type="date"
-                                                placeholder="From"
-                                                value={filters[col.id]?.startDate || ''}
-                                                onChange={(e) => setFilters({
-                                                    ...filters,
-                                                    [col.id]: {
-                                                        ...filters[col.id],
-                                                        startDate: e.target.value
-                                                    }
-                                                })}
-                                                className="w-[130px]"
-                                            />
-                                            <Input
-                                                type="date"
-                                                placeholder="To"
-                                                value={filters[col.id]?.endDate || ''}
-                                                onChange={(e) => setFilters({
-                                                    ...filters,
-                                                    [col.id]: {
-                                                        ...filters[col.id],
-                                                        endDate: e.target.value
-                                                    }
-                                                })}
-                                                className="w-[130px]"
-                                            />
-                                        </>
-                                    )}
-                                    {(col.type === 'string' || col.type === 'text') && (
-                                        <Input
-                                            placeholder={`${col.display_name}`}
-                                            value={filters[col.id] || ''}
-                                            onChange={(e) => setFilters({
-                                                ...filters,
-                                                [col.id]: e.target.value
-                                            })}
-                                            className="w-[150px]"
-                                        />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Clear All Button */}
-                        {(searchQuery || sortColumn || Object.values(filters).some(f => f !== undefined && f !== '' && f !== null)) && (
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setSortColumn(null);
-                                    setFilters({});
-                                }}
-                                className="text-destructive hover:text-destructive"
-                            >
-                                Clear All
-                            </Button>
-                        )}
-                    </div>
-                </div>
+                {/* Filter Controls */}
+                <FilterControls
+                    columns={columns}
+                    searchQuery={searchQuery}
+                    filters={filters}
+                    onSearchChange={setSearchQuery}
+                    onFilterChange={(colId, value) => setFilters({
+                        ...filters,
+                        [colId]: value
+                    })}
+                    onClearAll={() => {
+                        setSearchQuery('');
+                        setSortColumn(null);
+                        setFilters({});
+                    }}
+                />
 
                 {/* Results Info */}
-                {(searchQuery || sortColumn || Object.values(filters).some(f => f !== undefined && f !== '' && f !== null)) && (
+                {(searchQuery || sortColumn || isFilterActive(filters)) && (
                     <div className="mb-4 text-sm text-muted-foreground">
                         Showing {filteredAndSortedRows.length} of {rows.length} rows
                         {searchQuery && <span> (search)</span>}
                         {sortColumn && <span> (sorted)</span>}
-                        {Object.values(filters).some(f => f !== undefined && f !== '' && f !== null) && <span> (filtered)</span>}
+                        {isFilterActive(filters) && <span> (filtered)</span>}
                     </div>
                 )}
 
