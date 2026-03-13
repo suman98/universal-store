@@ -132,11 +132,12 @@ export default function Show() {
     // Filter and sort rows
     const filteredAndSortedRows = useMemo(() => {
         const filtered = rows.filter(row => {
+
             // Search filter
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
                 const matchesSearch = columns.some(col => {
-                    const cellValue = row.cell_values?.find(cv => cv.column_id === col.id);
+                    const cellValue = row.values?.find(cv => cv.column_id === col.id);
                     const value = cellValue?.[`value_${col.type}`] ?? '';
                     return String(value).toLowerCase().includes(query);
                 });
@@ -149,7 +150,7 @@ export default function Show() {
                 const column = columns.find(c => c.id === columnId);
                 if (!column) return true;
 
-                const cellValue = row.cell_values?.find(cv => cv.column_id === columnId);
+                const cellValue = row.values?.find(cv => cv.column_id === columnId);
                 const value = cellValue?.[`value_${column.type}`] ?? '';
 
                 return matchesFilter(value, filterValue, column.type);
@@ -163,8 +164,8 @@ export default function Show() {
             const column = columns.find(c => c.id === sortColumn);
             if (column) {
                 filtered.sort((a, b) => {
-                    const aCell = a.cell_values?.find(cv => cv.column_id === sortColumn);
-                    const bCell = b.cell_values?.find(cv => cv.column_id === sortColumn);
+                    const aCell = a.values?.find(cv => cv.column_id === sortColumn);
+                    const bCell = b.values?.find(cv => cv.column_id === sortColumn);
                     
                     const aValue = aCell?.[`value_${column.type}`] ?? '';
                     const bValue = bCell?.[`value_${column.type}`] ?? '';
